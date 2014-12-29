@@ -22,6 +22,10 @@ describe Rudis::State, :unit do
       expect(state.set("abc", "456", "XX")).to eq(:ok)
       expect(state.get("abc")).to eq("456")
     end
+
+    it 'returns error for wrong number of arguments' do
+      expect(state.set("abc")).to eq(Rudis::Error.incorrect_args('set'))
+    end
   end
 
 
