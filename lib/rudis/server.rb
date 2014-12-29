@@ -1,6 +1,7 @@
-require "socket"
-require "stringio"
-require "rudis/protocol"
+require 'socket'
+require 'stringio'
+require 'rudis/protocol'
+require 'rudis/state'
 
 module Rudis
   class Server
@@ -10,6 +11,7 @@ module Rudis
       @port = port
       @shutdown_pipe = IO.pipe
       @data = {}
+      @state = State.new
     end
 
     def listen
@@ -32,7 +34,7 @@ module Rudis
               running = false
             else
               begin
-                clients[socket].process!(@data)
+                clients[socket].process!(@state)
               rescue EOFError
                 clients.delete(socket)
                 socket.close
@@ -47,14 +49,14 @@ module Rudis
     end
 
     class Handler
-      attr_reader :client, :buffer
+      attr_reader :client, :buffer, :state
 
       def initialize(socket)
         @client = socket
         @buffer = ""
       end
 
-      def process!(data)
+      def process!(state)
         buffer << client.read_nonblock(10)
 
         cmds, processed = unmarshal(buffer)
@@ -65,10 +67,8 @@ module Rudis
           response = case cmd[0].downcase
                        when 'ping' then :pong
                        when 'echo' then cmd[1]
-                       when 'set' then
-                         data[cmd[1]] = cmd[2]
-                         :ok
-                       when 'get' then data[cmd[1]]
+                       when 'set' then state.set(*cmd[1..-1])
+                       when 'get' then state.get(*cmd[1..-1])
                       end
           client.write Rudis::Protocol.marshal(response)
         end
