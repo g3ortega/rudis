@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+port = ARGV.fetch(0, 6379)
+
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+
+require 'rudis/server'
+
+Rudis::Server.new(port).listen
+
