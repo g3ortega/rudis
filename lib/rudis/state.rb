@@ -6,9 +6,17 @@ module Rudis
       @data = {}
     end
 
-    def set(key, value)
-      data[key] = value
-      :ok
+    def set(*args)
+      key, value, modifier = *args
+
+      nx = modifier == 'NX'
+      xx = modifier == 'XX'
+      exists = data.has_key?(key)
+
+      if (!nx && !xx) || (nx && !exists) || (xx && exists)
+        data[key] = value
+        :ok
+      end
     end
 
     def get(key)

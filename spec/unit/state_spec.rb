@@ -15,6 +15,13 @@ describe Rudis::State, :unit do
       expect(state.set("abc", "456", "NX")).to eq(nil)
       expect(state.get("abc")).to eq("123")
     end
+
+    it 'does not overwrite an existing value with XX' do
+      expect(state.set("abc", "123", "XX")).to eq(nil)
+      state.set("abc", "123")
+      expect(state.set("abc", "456", "XX")).to eq(:ok)
+      expect(state.get("abc")).to eq("456")
+    end
   end
 
 
