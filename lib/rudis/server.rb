@@ -2,27 +2,35 @@ require "socket"
 
 module Rudis
   class Server
+    attr_reader :shutdown_pipe
 
     def initialize(port)
       @port = port
+      @shutdown_pipe = IO.pipe
+      @data = {}
     end
 
     def listen
       readable = []
       clients = {}
+      running = true
       server = TCPServer.new(port)
       readable << server
-      loop do
+      readable << shutdown_pipe[0]
+
+      while running
         ready_to_read, _ = IO.select(readable + clients.keys)
 
         ready_to_read.each do |socket|
           case socket
             when server
-              child_socket = socket.accept
+              child_socket = socket.accept_nonblock
               clients[child_socket] = Handler.new(child_socket)
+            when shutdown_pipe[0]
+              running = false
             else
               begin
-                clients[socket].process!
+                clients[socket].process!(@data)
               rescue EOFError
                 clients.delete(socket)
                 socket.close
@@ -37,14 +45,14 @@ module Rudis
     end
 
     class Handler
-      attr_reader :client
+      attr_reader :client, :buffer
 
       def initialize(socket)
         @client = socket
         @buffer = ""
       end
 
-      def process!
+      def process!(data)
         buffer << client.read_nonblock(10)
 
         cmds, processed = unmarshal(buffer)
@@ -53,10 +61,19 @@ module Rudis
 
         cmds.each do |cmd|
           response = case cmd[0].downcase
-          when 'ping' then "+PONG\r\n"
-          when 'echo' then "$#{cmd[1].length}\r\n#{cmd[1]}\r\n"
-          end
-
+                       when 'ping' then "+PONG\r\n"
+                       when 'echo' then "$#{cmd[1].length}\r\n#{cmd[1]}\r\n"
+                       when 'set' then
+                         data[cmd[1]] = cmd[2]
+                         "+OK\r\n"
+                       when 'get' then
+                         value = data[cmd[1]]
+                         if value
+                           "$#{value.length}\r\n#{value}\r\n"
+                         else
+                           "$-1\r\n"
+                         end
+                      end
           client.write response
         end
       end
