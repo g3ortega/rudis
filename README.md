@@ -1,1 +1,7 @@
-# A simple redis implementation made in Ruby
+# Rudis
+
+A ruby implementation of Redis useful for testing and development environments
+
+## Use
+
+### Coming Soon
