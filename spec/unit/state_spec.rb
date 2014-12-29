@@ -28,5 +28,21 @@ describe Rudis::State, :unit do
     end
   end
 
+  describe '#hset' do
+    it 'sets a value' do
+      expect(state.hset("mihash", "abc", "123")).to eq(:ok)
+      expect(state.hset("other", "def", "456")).to eq(:ok)
+      expect(state.hget("mihash", "abc")).to eq("123")
+    end
+  end
+
+  describe '#hmget' do
+    it 'returns multiple values at once' do
+      expect(state.hset("mihash", "abc", "123")).to eq(:ok)
+      expect(state.hset("mihash", "def", "456")).to eq(:ok)
+      expect(state.hmget("mihash", "abc", "def")).to eq(["123", "456"])
+    end
+  end
+
 
 end
