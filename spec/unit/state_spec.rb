@@ -42,6 +42,22 @@ describe Rudis::State, :unit do
       expect(state.hset("mihash", "def", "456")).to eq(:ok)
       expect(state.hmget("mihash", "abc", "def")).to eq(["123", "456"])
     end
+
+    it 'returns error when not hash value' do
+      state.set("mihash", "bogus")
+      expect(state.hmget("mihash", "key")).to eq(Rudis::Error.type_error)
+    end
+
+    it 'returns nils when empty' do
+      expect(state.hmget("mihash", "key")).to eq(nil)
+    end
+  end
+
+  describe '#hincrby' do
+    it 'increments a counter stored in a hash' do
+      state.hset("mihash", "abc", "123")
+      expect(state.hincrby("mihash", "abc", "2")).to eq(125)
+    end
   end
 
 
