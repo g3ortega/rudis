@@ -60,5 +60,16 @@ describe Rudis::State, :unit do
     end
   end
 
+  describe '#expire' do
+    it 'expires a key passively'do
+      state.set("abc", "123")
+      state.expire("abc", "1")
+      sleep 0.9
+      expect(state.get("abc")).to eq("123")
+      sleep 0.1
+      expect(state.get("abc")).to eq(nil)
+    end
+  end
+
 
 end
